@@ -74,13 +74,15 @@ fi
 # Install a nice zsh theme.
 #
 
-zplug "mafredri/zsh-async", \
-    from:github
-
-if [[ "$TERM" = "dumb" ]]; then
-    export PROMPT="$ "
+if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
+    export PS1="%20<...<%~%<< $ "
+    unsetopt zle
 else
     export PURE_PROMPT_SYMBOL="$"
+
+    zplug "mafredri/zsh-async", \
+        from:github
+
     zplug "sindresorhus/pure", \
         from:github, \
         use:pure.zsh, \
