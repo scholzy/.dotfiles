@@ -45,6 +45,10 @@ elif command -v vim > /dev/null; then
     alias vi=vim
 fi
 
+EDITOR=nvim
+VISUAL=nvim
+export EDITOR VISUAL
+
 #
 # Brief aliases to check running jobs on the University of Melbourne HPC
 # cluster and on raijin at the NCI.
