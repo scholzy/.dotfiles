@@ -79,7 +79,7 @@ fi
 #
 
 if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-    export PS1=$'\n'"[%F{green}%20<...<%~%<<%f @ %F{blue}%m%f]"$'\n'"%F{red}$%f "
+    export PS1=$'\n'"[%F{green}%40<...<%~%<<%f @ %F{blue}%m%f]"$'\n'"%F{red}$%f "
     unsetopt zle
 else
     export PURE_PROMPT_SYMBOL="$"
