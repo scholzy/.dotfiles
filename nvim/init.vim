@@ -114,9 +114,6 @@ set shiftwidth=4
 set softtabstop=4
 set expandtab
 " }}}
-" Startup page {{{
-Plug 'mhinz/vim-startify'
-" }}}
 " Tables {{{
 Plug 'dhruvasagar/vim-table-mode'
 " }}}
