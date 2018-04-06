@@ -106,9 +106,17 @@ zplug "zdharma/fast-syntax-highlighting", \
 #
 
 if [ "$(uname)" = "Darwin" ]; then
-    alias ls='ls -G'
+    if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
+	alias ls='TERM=xterm-256color ls -G'
+    else
+	alias ls='ls -G'
+    fi
 else
-    alias ls='ls --color=auto'
+    if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
+	alias ls='TERM=xterm-256color ls --color=auto'
+    else
+	alias ls='ls --color=auto'
+    fi
 fi
 
 #

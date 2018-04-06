@@ -91,6 +91,10 @@ let g:ale_sign_warning = "- "
 " Minimal view {{{
 Plug 'junegunn/goyo.vim'
 " }}}
+" Note taking {{{
+Plug 'xolox/vim-misc' | Plug 'xolox/vim-notes'
+let g:notes_unicode_enabled = 0
+" }}}
 " Pairwise movement {{{
 Plug 'tpope/vim-unimpaired'
 " }}}
