@@ -144,11 +144,9 @@ let g:lightline = {
     \ 'colorscheme': 'wombat',
     \ 'component_function': {
     \   'readonly': 'LightlineReadonly',
-    \   'fugitive': 'LightlineFugitive'
-    \ },
-    \ 'separator': { 'left': '', 'right': '' },
-    \ 'subseparator': { 'left': '', 'right': '' }
+    \   'fugitive': 'LightlineFugitive'}
     \ }
+let g:lightline.subseparator = { 'left': '│', 'right': '│' }
 function! LightlineReadonly()
     return &readonly ? '' : ''
 endfunction
