@@ -1,25 +1,4 @@
-#!/bin/zsh
-
-#
-# Install missing functions if on the raijin supercomputer. This needs to be
-# done first, or else zplug will not work.
-#
-
-[[ "$(hostname)" =~ "raijin.*" ]] && fpath+=/usr/share/zsh/4.3.11/functions
-
-#
-# Initialize the zplug plugin manager.
-#
-
-export ZPLUG_HOME="$HOME/.zplug"
-if [ ! -d "${ZPLUG_HOME}" ]; then
-    git clone https://github.com/zplug/zplug "${ZPLUG_HOME}"
-fi
-source "${ZPLUG_HOME}/init.zsh"
-
-#
-# Absolutely basic changes.
-#
+#!/usr/bin/env zsh
 
 # Use emacs keybindings.
 bindkey -e
@@ -27,103 +6,65 @@ bindkey -e
 # Install user-downloaded completions/functions
 fpath+="~/.zfunc"
 
-#
-# Add programming stuff to the PATH.
-#
-
-[ -d "$HOME/.cargo/bin" ] && PATH="$HOME/.cargo/bin:$PATH"
-
-#
 # Prefer nvim if it's available and use it as the $MANPAGER.
-#
-
 if command -v nvim > /dev/null; then
-    alias vi=nvim
-    alias vim=nvim
+    EDITOR=nvim
     export MANPAGER="nvim -c 'set ft=man' -"
 elif command -v vim > /dev/null; then
-    alias vi=vim
+    EDITOR=vim
 fi
-
-EDITOR=nvim
-VISUAL=nvim
+alias vi="$EDITOR"
+alias vim="$EDITOR"
+VISUAL="$EDITOR"
 export EDITOR VISUAL
 
-#
-# Brief aliases to check running jobs on the University of Melbourne HPC
-# cluster and on raijin at the NCI.
-#
-
+# Check running jobs on the University of Melbourne HPC cluster `spartan'
 if [ "$(hostname)" = "spartan.hpc.unimelb.edu.au" ]; then
     alias sq="squeue -u mscholz"
 else
     alias sq="ssh spartan.hpc.unimelb.edu.au squeue -u mscholz"
 fi
 
-if [[ "$(hostname)" =~ "raijin.*" ]]; then
-    alias qs="qstat -u ms9470"
+# Set my prompt
+if [ "$(whoami)" = "mscholz" ]; then
+    P_NAME=""
 else
-    alias qs="ssh ms9470@raijin.nci.org.au /opt/pbs/default/bin/qstat -u ms9470"
+    P_NAME="%F{green}$(whoami) %F{white}at "
 fi
 
-#
-# If on spartan, load up miniconda.
-#
-
-if [ "$(hostname)" = "spartan.hpc.unimelb.edu.au" ]; then
-    PATH="$HOME/punim0008/local/miniconda2/bin:$PATH"
+if [ "$(hostname)" = "yokohama.local" ]; then
+    P_WHERE=""
+else
+    P_WHERE="%F{yellow}%M %F{white}in "
 fi
 
-#
-# Install a nice zsh theme.
-#
+# Set the prompt
+[ -f "$HOME/.zsh-prompt.zsh" ] && source "$HOME/.zsh-prompt.zsh"
 
 if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-    export PS1=$'\n'"[%F{green}%40<...<%~%<<%f @ %F{blue}%m%f]"$'\n'"%F{red}$%f "
     unsetopt zle
-else
-    export PURE_PROMPT_SYMBOL="$"
-
-    zplug "mafredri/zsh-async", \
-        from:github
-
-    zplug "sindresorhus/pure", \
-        from:github, \
-        use:pure.zsh, \
-        as:theme
 fi
 
-#
-# Syntax highlighting for zsh, the faster variant.
-#
-
-zplug "zdharma/fast-syntax-highlighting", \
-    from:github, \
-    defer:2
-
-#
-# Color stuff in ls by default.
-#
-
+# Color `ls' output by default
 if [ "$(uname)" = "Darwin" ]; then
     if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-	alias ls='TERM=xterm-256color ls -G'
+        alias ls='TERM=xterm-256color ls -G'
     else
-	alias ls='ls -G'
+        alias ls='ls -G'
     fi
 else
     if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-	alias ls='TERM=xterm-256color ls --color=auto'
+        alias ls='TERM=xterm-256color ls --color=auto'
     else
-	alias ls='ls --color=auto'
+        alias ls='ls --color=auto'
     fi
 fi
 
-#
-# Zsh completion.
-#
-
 # Use a menu-style completion interface.
+fpath=(/usr/local/share/zsh-completions $fpath)
+autoload -Uz compinit
+compinit
+
 zstyle ':completion:*' menu select
 
 # Autocompletion for scp from remote computers.
@@ -131,13 +72,11 @@ if [ "x$CASE_SENSITIVE" = "xtrue" ]; then
   zstyle ':completion:*' matcher-list 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
   unset CASE_SENSITIVE
 else
-  zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+  zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' '
+l:|=* r:|=*'
 fi
 
-#
 # Make it faster and easier to background/foreground vim.
-#
-
 fancy-ctrl-z () {
   if [[ $#BUFFER -eq 0 ]]; then
     BUFFER="fg"
@@ -150,27 +89,10 @@ fancy-ctrl-z () {
 zle -N fancy-ctrl-z
 bindkey '^Z' fancy-ctrl-z
 
-#
-# Change profile from the command line in Terminal.app.
-#
+# Load up `fzf' if it's there
+[ -f "$HOME/.fzf.zsh" ] && source "$HOME/.fzf.zsh"
 
-function tabc() {
-    NAME=$1; if [ -z "$NAME" ]; then NAME="Coral"; fi
-    osascript -e "tell application \"Terminal\" to set current settings of front window to settings set \"$NAME\""
-}
-
-function retina() {
-    tabc "Coral"
-}
-
-function external() {
-    tabc "Coral Tewi"
-}
-
-#
 # Save a better history.
-#
-
 if [ -z $HISTFILE ]; then
     HISTFILE=$HOME/.zsh_history
 fi
@@ -188,20 +110,3 @@ setopt inc_append_history
 
 bindkey '^[[A' up-line-or-search
 bindkey '^[[B' down-line-or-search
-
-#
-# Finally, install all plugins which have not yet been installed.
-#
-
-if ! zplug check --verbose; then
-    printf "Install? [y/N]: "
-    if read -q; then
-        echo; zplug install
-    fi
-fi
-
-#
-# Then, source plugins and add commands to $PATH
-# 
-
-zplug load
