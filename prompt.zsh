@@ -60,7 +60,7 @@ GIT_PROMPT() {
 # Indicate when using SSH
 REMOTE_PROMPT() {
     if [ -n "${SSH_CLIENT}" ] || [ -n "${SSH_TTY}" ]; then
-	echo "${USER_LEVEL}[%F{yellow}$(hostname -s)${USER_LEVEL}] "
+	echo "${USER_LEVEL}[%F{yellow}$(hostname -s)${USER_LEVEL}]-"
     fi
 }
 
