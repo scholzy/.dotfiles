@@ -1,12 +1,72 @@
 #!/usr/bin/env zsh
 
-# Use emacs keybindings.
-bindkey -e
+# Path to your oh-my-zsh installation.
+export ZSH=/Users/mscholz/.oh-my-zsh
 
-# Install user-downloaded completions/functions
-fpath+="~/.zfunc"
+# Make sure that oh-my-zsh is installed.
+if [ ! -d "${ZSH}" ]; then
+    git clone https://github.com/robbyrussell/oh-my-zsh.git "${ZSH}"
+fi
 
-# Prefer nvim if it's available and use it as the $MANPAGER.
+# Set name of the theme to load.
+ZSH_THEME="ys"
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion. Case
+# sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
+# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(
+  git
+)
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# ssh
+# export SSH_KEY_PATH="~/.ssh/rsa_id"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
 if command -v nvim > /dev/null; then
     EDITOR=nvim
     export MANPAGER="nvim -c 'set ft=man' -"
@@ -17,64 +77,6 @@ alias vi="$EDITOR"
 alias vim="$EDITOR"
 VISUAL="$EDITOR"
 export EDITOR VISUAL
-
-# Check running jobs on the University of Melbourne HPC cluster `spartan'
-if [ "$(hostname)" = "spartan.hpc.unimelb.edu.au" ]; then
-    alias sq="squeue -u mscholz"
-else
-    alias sq="ssh spartan.hpc.unimelb.edu.au squeue -u mscholz"
-fi
-
-# Set my prompt
-if [ "$(whoami)" = "mscholz" ]; then
-    P_NAME=""
-else
-    P_NAME="%F{green}$(whoami) %F{white}at "
-fi
-
-if [ "$(hostname)" = "yokohama.local" ]; then
-    P_WHERE=""
-else
-    P_WHERE="%F{yellow}%M %F{white}in "
-fi
-
-# Set the prompt
-[ -f "$HOME/.zsh-prompt.zsh" ] && source "$HOME/.zsh-prompt.zsh"
-
-if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-    unsetopt zle
-fi
-
-# Color `ls' output by default
-if [ "$(uname)" = "Darwin" ]; then
-    if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-        alias ls='TERM=xterm-256color ls -G'
-    else
-        alias ls='ls -G'
-    fi
-else
-    if [[ "$TERM" = "dumb" || "$TERM" = "emacs" ]]; then
-        alias ls='TERM=xterm-256color ls --color=auto'
-    else
-        alias ls='ls --color=auto'
-    fi
-fi
-
-# Use a menu-style completion interface.
-fpath=(/usr/local/share/zsh-completions $fpath)
-autoload -Uz compinit
-compinit
-
-zstyle ':completion:*' menu select
-
-# Autocompletion for scp from remote computers.
-if [ "x$CASE_SENSITIVE" = "xtrue" ]; then
-  zstyle ':completion:*' matcher-list 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-  unset CASE_SENSITIVE
-else
-  zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' '
-l:|=* r:|=*'
-fi
 
 # Make it faster and easier to background/foreground vim.
 fancy-ctrl-z () {
@@ -88,25 +90,3 @@ fancy-ctrl-z () {
 }
 zle -N fancy-ctrl-z
 bindkey '^Z' fancy-ctrl-z
-
-# Load up `fzf' if it's there
-[ -f "$HOME/.fzf.zsh" ] && source "$HOME/.fzf.zsh"
-
-# Save a better history.
-if [ -z $HISTFILE ]; then
-    HISTFILE=$HOME/.zsh_history
-fi
-HISTSIZE=100000
-SAVEHIST=100000
-HISTCONTROL=ignoredups
-
-setopt append_history
-setopt extended_history
-setopt hist_expire_dups_first
-setopt hist_ignore_dups
-setopt hist_ignore_space
-setopt hist_verify
-setopt inc_append_history
-
-bindkey '^[[A' up-line-or-search
-bindkey '^[[B' down-line-or-search
