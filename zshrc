@@ -77,7 +77,7 @@ elif command -v vim > /dev/null; then
 fi
 
 # But if we're inside Emacs, use that.
-if [ -z "${INSIDE_EMACS}" ]; then
+if [ ! -z "${INSIDE_EMACS}" ]; then
     EDITOR=emacsclient
 fi
 
