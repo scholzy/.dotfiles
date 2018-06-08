@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 # Path to your oh-my-zsh installation.
-export ZSH=/Users/mscholz/.oh-my-zsh
+export ZSH="${HOME}/.oh-my-zsh"
 
 # Make sure that oh-my-zsh is installed.
 if [ ! -d "${ZSH}" ]; then
