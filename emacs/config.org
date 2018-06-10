@@ -1,0 +1,523 @@
+#+TITLE: Emacs Configuration
+#+AUTHOR: Michael Scholz
+#+EMAIL: m@scholz.moe
+
+* Emacs initialization
+** Package management
+*** Turn on =package.el=
+=package.el= is the Emacs package manager, and makes life so much easier than adding subfolders to the ~emacs-user-dir~.
+
+#+BEGIN_SRC emacs-lisp
+  (require 'package)
+#+END_SRC
+*** Add repositories
+By default, =package.el= only has the ELPA repository installed by default. The MELPA repository has loads of useful packages, and so I want it.
+
+#+BEGIN_SRC emacs-lisp
+  (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+		      (not (gnutls-available-p))))
+	 (url (concat (if no-ssl
+			  "http"
+			"https")
+		      "://melpa.org/packages/")))
+    (add-to-list 'package-archives (cons "melpa" url) t))
+    (package-initialize)
+#+END_SRC
+*** Download package list
+The package list needs to be downloaded on the first run.
+
+#+BEGIN_SRC emacs-lisp
+  (when (not package-archive-contents)
+    (package-refresh-contents))
+#+END_SRC
+*** Install the =use-package= wrapper
+=use-package= is the best thing about package management on Emacs. It controls automatically downloading packages, lazy loading of packages, and more.
+
+#+BEGIN_SRC emacs-lisp
+  (unless (package-installed-p 'use-package)
+    (package-install 'use-package))
+#+END_SRC
+** Fix the PATH on MacOS
+Emacs doesn't source files such as the =bashrc= and =zshrc= on MacOS, meaning that any configuration here, and most importantly the PATH variable, won't be read.
+
+The =exec-path-from-shell= package by Steve Purcell fixes this.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package exec-path-from-shell
+    :ensure t
+    :defer nil
+    :config (when (memq window-system '(mac ns x))
+	      (exec-path-from-shell-initialize)))
+#+END_SRC
+** Separate configuration and customization files
+Move the changes made by =M-x configure= and its friends to a separate file. This way, they won't be tracked by version control, etc.
+
+#+BEGIN_SRC emacs-lisp
+  (setq custom-file (concat user-emacs-directory
+			    "custom.el"))
+  (load-file custom-file)
+#+END_SRC
+* Basic modifications
+** Shorten confirmation prompts
+"yes" and "no" are simply too long.
+
+#+BEGIN_SRC emacs-lisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+#+END_SRC
+** Organize backup and temporary files
+The default "*~" backup files littered everywhere are really annoying. These settings tuck all these files away in one organized spot.
+
+#+BEGIN_SRC emacs-lisp
+  (setq backup-directory-alist `(("." . "~/.emacs.d/saves"))
+	backup-by-copying t
+	delete-old-versions t
+	kept-new-versions 6
+	kept-old-versions 2
+	version-control t)
+#+END_SRC
+* User interface
+** Add some color
+Get rid of angry fruit and use a color theme that matches my terminal. Based on poony's =coral reef= terminal color scheme.
+
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'custom-theme-load-path (concat user-emacs-directory
+					       "themes/"))
+  (load-theme 'coral)
+#+END_SRC
+** Remove GUI bars
+I find I don't need to use the scroll-, menu-, or tool bars on GUI Emacs.
+
+#+BEGIN_SRC emacs-lisp
+  (scroll-bar-mode -1)
+  (menu-bar-mode -1)
+  (tool-bar-mode -1)
+#+END_SRC
+** Fonts
+*** English monospace font
+Getting the right font makes life so much more comfortable. For now, this font is Fira Code at 10 pt.
+
+#+BEGIN_SRC emacs-lisp
+  (set-face-attribute 'default nil
+		      :family "Fira Code"
+		      :height 100
+		      :weight 'light)
+
+  (set-face-attribute 'bold nil
+		      :weight 'normal)
+
+  (set-face-attribute 'italic nil
+		      :slant 'normal)
+#+END_SRC
+
+However, sometimes I want to use a bitmap font.
+
+#+BEGIN_SRC emacs-lisp
+  (defun ms-bitmap ()
+    (interactive)
+    (set-frame-font "tewi tall-11:weight=normal"))
+
+  (defun ms-vector ()
+    (interactive)
+    (set-frame-font "Fira Code-10:weight=light"))
+#+END_SRC
+
+If I use GohuFont, however, it lacks some fancy characters, so we need to use Tewi as a backup.
+
+#+BEGIN_SRC emacs-lisp
+  (set-fontset-font nil 'unicode "tewi tall-11" nil 'append)
+#+END_SRC
+*** Other fonts
+Here we set the fonts for emoji and Japanese, to ensure that their font heights match the main font height.
+
+#+BEGIN_SRC emacs-lisp
+  (set-fontset-font t 'unicode "Apple Color Emoji-8" nil 'prepend)
+  (set-fontset-font t 'unicode "Hiragino Sans-10" nil 'prepend)
+#+END_SRC
+*** Programming ligatures
+#+BEGIN_SRC emacs-lisp
+  (defun ms-ligatures-mac ()
+    (interactive)
+    (if (fboundp 'mac-auto-operator-composition-mode)
+	(mac-auto-operator-composition-mode +1))
+    (global-auto-composition-mode -1)
+    (add-hook 'prog-mode-hook #'auto-composition-mode)
+    (add-hook 'lisp-interaction-mode-hook (lambda ()
+					    (auto-composition-mode -1))))
+  (add-hook 'after-init-hook #'ms-ligatures-mac)
+#+END_SRC
+** Hide minor modes
+I don't want to see all minor modes in the mode-line, especially really generic modes like ~visual-line-mode~. The =diminish= package lets me hide everything I want to ignore and is integrated with =use-package=.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package diminish
+    :ensure t
+    :defer t)
+#+END_SRC
+** Fancy mode-line
+#+BEGIN_SRC emacs-lisp
+  (use-package spaceline
+    :ensure t
+    :defer nil
+    :config (progn
+	      (require 'spaceline-config)
+
+	      ;; Stop the buffer name from overflowing and getting hidden.
+	      (setq spaceline-buffer-id-max-length 20)
+
+	      (defun spaceline--string-trim-from-center (str len)
+		"Return STR with its center chars trimmed for it to be a maximum length of LEN.
+  When characters are trimmed, they are replaced with '...'."
+		(if (> (length str) len)
+		    (let ((mid (/ (- len 3) 2)))
+		      (concat (substring str 0 mid)
+			      (apply #'propertize "..." (text-properties-at (- mid 1) str))
+			      (substring str (- (1+ mid)) nil)))
+		  str))
+
+	      (spaceline-define-segment buffer-id
+		"Name of buffer."
+		(s-trim (spaceline--string-trim-from-center
+			 (powerline-buffer-id 'mode-line-buffer-id)
+			 spaceline-buffer-id-max-length)))
+
+	      ;; Shorten ERC buffer names down to 2 letters.
+	      (spaceline-define-segment erc-track
+		(when (bound-and-true-p erc-track-mode)
+		  (mapcar (lambda (b) (substring (buffer-name (car b)) 0 2))
+			  erc-modified-channels-alist)))
+
+	      ;; Shorten ERC buffer names down to 2 letters.
+	      (spaceline-define-segment circe-track
+		(mapcar (lambda (b) (substring b 0 2))
+			  tracking-buffers))
+
+	      ;; Use a custom theme for the mode-line, mostly to remove segments
+	      ;; disappearing when the window/frame/whatever is inactive.
+	      (defun spaceline--theme (left second-left &rest additional-segments)
+		"Convenience function for the spacemacs and emacs themes."
+		(spaceline-compile
+		  `(,left
+		    (anzu :priority 4)
+		    auto-compile
+		    ,second-left
+		    major-mode
+		    process
+		    minor-modes
+		    ;; erc-track
+		    circe-track
+		    (version-control :priority 7)
+		    org-pomodoro
+		    org-clock
+		    nyan-cat)
+		  `(which-function
+		    (python-pyvenv :fallback python-pyenv)
+		    purpose
+		    battery
+		    ;; projectile-root
+		    (selection-info :priority 2)
+		    input-method
+		    ((flycheck-error flycheck-warning flycheck-info)
+		     :priority 3)
+		    mu4e-alert-segment
+		    global
+		    ((point-position
+		      line-column)
+		     :separator " | "
+		     :priority 3
+		     :face highlight-face)
+		    ;; ,@additional-segments
+		    ;; (buffer-position :priority 0)
+		    ;;(hud :priority 0)
+		    ))
+
+		(setq-default mode-line-format
+			      '("%e" (:eval (spaceline-ml-main)))))
+
+	      (unless (fboundp 'mac-auto-operator-composition-mode)
+		(setq powerline-default-separator nil))
+
+	      (spaceline-compile)
+	      (spaceline-emacs-theme)))
+#+END_SRC
+* Global minor modes
+** Helm, another completion thing
+#+BEGIN_SRC emacs-lisp
+  (use-package helm
+    :ensure t
+    :defer nil
+    :disabled
+    :config (progn
+	      (require 'helm)
+	      (require 'helm-config)
+
+	      (global-set-key (kbd "C-c h") 'helm-command-prefix)
+	      (global-unset-key (kbd "C-x c"))
+
+	      (define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
+
+	      (when (executable-find "curl")
+		(setq helm-google-suggest-use-curl-p t))
+
+	      (setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
+		    helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
+		    helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
+		    helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
+		    helm-ff-file-name-history-use-recentf t
+		    helm-echo-input-in-header-line t
+		    helm-M-x-fuzzy-match t
+		    helm-buffers-fuzzy-matching t
+		    helm-recentf-fuzzy-match t)
+
+	      (defun spacemacs//helm-hide-minibuffer-maybe ()
+		"Hide minibuffer in Helm session if we use the header line as input field."
+		(when (with-helm-buffer helm-echo-input-in-header-line)
+		  (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
+		    (overlay-put ov 'window (selected-window))
+		    (overlay-put ov 'face
+				 (let ((bg-color (face-background 'default nil)))
+				   `(:background ,bg-color :foreground ,bg-color)))
+		    (setq-local cursor-type nil))))
+
+
+	      (add-hook 'helm-minibuffer-set-up-hook
+			'spacemacs//helm-hide-minibuffer-maybe)
+
+	      (setq helm-autoresize-max-height 0
+		    helm-autoresize-min-height 20)
+	      (helm-autoresize-mode 1)
+
+	      (helm-mode 1))
+    :bind (("M-x" . helm-M-x)
+	   ("M-y" . helm-show-kill-ring)
+	   ("C-x b" . helm-mini)
+	   ("C-x C-f" . helm-find-files))
+    :diminish helm-mode)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-projectile
+    :after helm
+    :ensure t
+    :defer nil)
+#+END_SRC
+** Ivy, a better completion framework
+The default Emacs completion is a bit crappy. =ido= is included and is much nicer, but gets really slow whenever there are lots of completion candidates. Ivy is a replacement for =ido= that is more flexible and significantly faster.
+
+It comes as two parts: the Ivy framework itself and the Counsel function package, which contains modified versions of built-in functions that take extra advantage of Ivy.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy
+    :ensure t
+    :defer nil
+    :init (setq ivy-use-virtual-buffers t
+		enable-recursive-minibuffers t)
+    :config (ivy-mode +1)
+    :diminish ivy-mode)
+#+END_SRC
+
+The Counsel functions are similarly simple to install, but require a few rebindings to override the default functions.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package counsel
+    :ensure t
+    :defer nil
+    :after ivy
+    :bind (("M-x" . counsel-M-x)
+	   ("M-y" . counsel-yank-pop)
+	   ("C-x C-f" . counsel-find-file)
+	   ("C-s" . swiper)))
+#+END_SRC
+
+The last thing to do is install =ivy-rich=, a pretty wrapper around the ~ivy-switch-buffer~ function.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy-rich
+    :ensure t
+    :defer nil
+    :after ivy
+    :init (setq ivy-virtual-abbreviate 'full
+		ivy-rich-switch-buffer-name-max-length 20
+		ivy-rich-switch-buffer-align-virtual-buffer t
+		ivy-rich-path-style 'abbrev
+		ivy-rich-parse-remote-buffer nil)
+    :config (progn
+	      (require 'ivy-rich)
+	      (ivy-set-display-transformer 'ivy-switch-buffer
+					   'ivy-rich-switch-buffer-transformer)))
+#+END_SRC
+** Projectile, a project management tool
+#+BEGIN_SRC emacs-lisp
+  (use-package projectile
+    :ensure t
+    :defer nil
+    :config (projectile-global-mode +1)
+    :diminish projectile-mode)
+
+  (use-package counsel-projectile
+    :ensure t
+    :defer nil
+    :after projectile
+    :config (counsel-projectile-mode +1))
+#+END_SRC
+* Major modes
+** AucTeX, for editing LaTeX
+#+BEGIN_SRC emacs-lisp
+  (use-package tex
+    :ensure auctex
+    :defer t
+    :init (setq reftex-plug-into-AUCTeX t
+		TeX-auto-save t
+		TeX-parse-self t
+		TeX-PDF-mode 1
+		font-latex-fontify-script nil)
+    :config (progn
+	      ;; Soft wrap in LaTeX.
+	      (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+
+	      ;; RefTeX is nice for referencing.
+	      (add-hook 'LaTeX-mode-hook 'turn-on-reftex))
+    :diminish visual-line-mode
+    :diminish reftex-mode)
+
+  (use-package auctex-latexmk
+    :ensure t
+    :after tex
+    :init (setq auctex-latemk-inherit-TeX-PDF-mode t)
+    :config (progn (require 'auctex-latexmk)
+		   (auctex-latexmk-setup)))
+#+END_SRC
+** Circe, an IRC client
+The default IRC client, ERC, is not so bad, but has a few funny "features" in it like not keeping the prompt line at the bottom of the window. Therefore, I prefer Circe, which is a bit more modern but not cluttered with features.
+
+#+BEGIN_SRC emacs-lisp
+(use-package circe
+  :ensure t
+  :defer nil
+  :init (progn
+	  ;; Load up the passwords from a ``secret'' file.
+	  (load-file "~/.passwords.el")
+
+	  ;; Set up nick highlighting colors for the monokai color theme.
+	  (if (display-graphic-p)
+	      (setq circe-color-nicks-pool-type '("#E6DB74"   ; yellow
+						  "#FE9715"   ; orange
+						  "#F92672"   ; red
+						  "#FD5FF0"   ; magenta
+						  "#66D9EF"   ; blue
+						  "#A6E22E"   ; green
+						  "#A1EFE4"   ; cyan
+						  "#AE81FF")) ; violet
+	    ;; If Emacs is in a terminal, use the ANSI colors instead.
+	    (setq circe-color-nicks-pool-type
+		  '("red" "orange" "yellow" "magenta" "violet" "blue" "cyan" "green")))
+
+	  ;; Set up the servers I want to connect to. These are running on a ZNC
+	  ;; instance so some funny business with different passwords is needed.
+	  (setq  circe-network-options
+		 `(("synIRC"
+		    :nick "michael"
+		    :pass ,*synirc-pass*
+		    :host "znc.scholz.moe"
+		    :port 80)
+		   ("freenode"
+		   :nick "scholzy"
+		   :pass ,*freenode-pass*
+		   :host "znc.scholz.moe"
+		   :port 80)
+		   ("rizon"
+		    :nick "michael"
+		    :pass ,*rizon-pass*
+		    :host "znc.scholz.moe"
+		    :port 80))
+
+		 ;; Don't kill channel buffers and such.
+		 circe-server-killed-confirmation 'ask-and-kill-all
+
+		 ;; Right align circe stuff at 20 columns.
+		 lui-fill-type 16))
+  :config (progn
+	    ;; Turn on nick highlighting.
+	    (enable-circe-color-nicks)
+
+	    ;; Put the channel name in the prompt
+	    (defun ms-circe-prompt ()
+	      (lui-set-prompt
+	       (concat (propertize (concat (buffer-name) ">")
+				   'face 'circe-prompt-face)
+		       " ")))
+	    (add-hook 'circe-chat-mode-hook #'ms-circe-prompt)
+
+	    ;; Define helper functions to connect to specific servers.
+	    (defun ms-synirc ()
+	      (interactive)
+	      (circe "synIRC")
+	      (rename-buffer "synIRC"))
+
+	    (defun ms-freenode ()
+	      (interactive)
+	      (circe "freenode")
+	      (rename-buffer "Freenode"))
+
+	    (defun ms-rizon ()
+	      (interactive)
+	      (circe "rizon")
+	      (rename-buffer "Rizon"))
+
+	    ;; Nuke all running Circe connections.
+	    (defun ms-clean-circe ()
+	      (interactive)
+	      (message "Cleaning up circe!")
+	      (dolist (buffer (circe-server-buffers))
+		(kill-buffer buffer)))))
+#+END_SRC
+** Magit, a git interface
+#+BEGIN_SRC emacs-lisp
+  (use-package magit
+    :ensure t
+    :defer t
+    :bind ("C-x g" . magit-status)
+    :diminish auto-revert-mode)
+#+END_SRC
+** org-mode, a writing format
+#+BEGIN_SRC emacs-lisp
+  (use-package org
+    :ensure t
+    :defer nil
+    :init (setq org-src-fontify-natively t
+		org-todo-keywords '((sequence "TODO" "DOING" "|" "DONE"))
+		org-todo-keyword-faces `(("TODO" . ,coral-red)
+					 ("DOING" . ,coral-yellow)
+					 ("DONE" . ,coral-green)))
+    :config (add-hook 'org-mode-hook #'visual-line-mode)
+    :diminish visual-line-mode)
+#+END_SRC
+** Shells, for running shells?
+*** Quick bindings
+Obviously I want to be able to open =shell= and =eshell= buffers quickly.
+
+#+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "C-c !") 'shell)
+  (global-set-key (kbd "C-c e") 'eshell)
+#+END_SRC
+*** Remote shells
+#+BEGIN_SRC emacs-lisp
+  (defun ms-spartan-shell ()
+    (interactive)
+    (let ((default-directory "/ssh:spartan:"))
+      (shell "*spartan*")))
+#+END_SRC
+*** Don't split new shell windows
+#+BEGIN_SRC emacs-lisp
+  (push (cons "\\*shell.*\\*" display-buffer--same-window-action)
+	display-buffer-alist)
+  (push (cons "\\*spartan\\*" display-buffer--same-window-action)
+	display-buffer-alist)
+  (push (cons "\\*office.*\\*" display-buffer--same-window-action)
+	display-buffer-alist)
+#+END_SRC
+*** Zsh and weird shell echos
+For some reason, sometimes zsh echoes back my input in =shell-mode=. I don't really want this but I'm sure there's a reason why it does this.
+
+#+BEGIN_SRC emacs-lisp
+  (setq-default comint-process-echoes t)
+#+END_SRC

@@ -8,8 +8,8 @@ if [ ! -d "${ZSH}" ]; then
     git clone https://github.com/robbyrussell/oh-my-zsh.git "${ZSH}"
 fi
 
-# Set name of the theme to load.
-ZSH_THEME="ys"
+# Set name of the theme to load. This is just a temporary workaround, since the prompt is reset later.
+ZSH_THEME="gallifrey"
 
 # Uncomment the following line to use case-sensitive completion.
 CASE_SENSITIVE="false"
@@ -105,3 +105,10 @@ if [[ "$(hostname)" =~ "spartan*" ]]; then
 else
     alias sq="ssh spartan.hpc.unimelb.edu.au squeue -u mscholz"
 fi
+
+# Re-set the prompt. This is a version of the "gallifrey" oh-my-zsh theme, modified to remove any potentially funny non-ASCII characters.
+PROMPT='%{$fg[green]%}%m%{$reset_color%} %(4~|.../%3~|%~) $(git_prompt_info)%{$reset_color%}%B$%b '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}<"
+ZSH_THEME_GIT_PROMPT_SUFFIX="> %{$reset_color%}"
