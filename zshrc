@@ -107,8 +107,25 @@ else
 fi
 
 # Re-set the prompt. This is a version of the "gallifrey" oh-my-zsh theme, modified to remove any potentially funny non-ASCII characters.
-PROMPT='%{$fg[green]%}%m%{$reset_color%} %(4~|.../%3~|%~) $(git_prompt_info)%{$reset_color%}%B$%b '
-RPS1="${return_code}"
+if [ ! -z "${INSIDE_EMACS}" ]; then
+    #
+    # In Emacs
+    #
+    PROMPT='%{$fg[green]%}%m%{$reset_color%} %(4~|.../%3~|%~) $(git_prompt_info)%{$reset_color%}$ '
+    RPS1="${return_code}"
 
-ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}<"
-ZSH_THEME_GIT_PROMPT_SUFFIX="> %{$reset_color%}"
+    ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}<"
+    ZSH_THEME_GIT_PROMPT_SUFFIX="> %{$reset_color%}"
+else
+    #
+    # Outside Emacs
+    #
+    PROMPT='%(?,%{$fg[green]%},%{$fg[red]%})%%%{$reset_color%} '
+    # RPS1='%{$fg[blue]%}%~%{$reset_color%} '
+    RPS1='%{$fg[white]%}%2~$(git_prompt_info) %{$fg_bold[blue]%}%m%{$reset_color%}'
+
+    ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[yellow]%}("
+    ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+    ZSH_THEME_GIT_PROMPT_CLEAN=""
+    ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$fg[yellow]%}"
+fi

@@ -470,6 +470,12 @@ The default IRC client, ERC, is not so bad, but has a few funny "features" in it
 	      (dolist (buffer (circe-server-buffers))
 		(kill-buffer buffer)))))
 #+END_SRC
+** ESS, for Julia and R
+#+BEGIN_SRC emacs-lisp
+  (use-package ess
+    :ensure t
+    :defer t)
+#+END_SRC
 ** Magit, a git interface
 #+BEGIN_SRC emacs-lisp
   (use-package magit
