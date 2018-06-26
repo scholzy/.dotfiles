@@ -75,6 +75,12 @@ The default "*~" backup files littered everywhere are really annoying. These set
 	kept-old-versions 2
 	version-control t)
 #+END_SRC
+** Don't use tabs
+Tabs are bad.
+
+#+BEGIN_SRC emacs-lisp
+  (setq-default indent-tabs-mode nil)
+#+END_SRC
 * User interface
 ** Add some color
 Get rid of angry fruit and use a color theme that matches my terminal. Based on poony's =coral reef= terminal color scheme.
@@ -98,15 +104,15 @@ Getting the right font makes life so much more comfortable. For now, this font i
 
 #+BEGIN_SRC emacs-lisp
   (set-face-attribute 'default nil
-		      :family "Fira Code"
+		      :family "Hasklig"
 		      :height 100
-		      :weight 'light)
+		      :weight 'regular)
 
   (set-face-attribute 'bold nil
 		      :weight 'normal)
 
   (set-face-attribute 'italic nil
-		      :slant 'normal)
+		      :slant 'italic)
 #+END_SRC
 
 However, sometimes I want to use a bitmap font.

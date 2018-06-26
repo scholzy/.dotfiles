@@ -9,7 +9,7 @@ if [ ! -d "${ZSH}" ]; then
 fi
 
 # Set name of the theme to load. This is just a temporary workaround, since the prompt is reset later.
-ZSH_THEME="gallifrey"
+ZSH_THEME=""
 
 # Uncomment the following line to use case-sensitive completion.
 CASE_SENSITIVE="false"
@@ -68,6 +68,11 @@ source $ZSH/oh-my-zsh.sh
 #
 # Example aliases
 
+# Turn on ls colors in Emacs.
+if [ ! -z "${INSIDE_EMACS}" ]; then
+    alias ls="TERM=xterm ls"
+fi
+
 # Use neovim if it's there, but otherwise normal vim is ok.
 if command -v nvim > /dev/null; then
     EDITOR=nvim
@@ -107,30 +112,18 @@ else
 fi
 
 # Re-set the prompt. This is a version of the "gallifrey" oh-my-zsh theme, modified to remove any potentially funny non-ASCII characters.
-if [ ! -z "${INSIDE_EMACS}" ]; then
-    #
-    # In Emacs
-    #
-    PROMPT='%{$fg[green]%}%m%{$reset_color%} %(4~|.../%3~|%~) $(git_prompt_info)%{$reset_color%}$ '
-    RPS1="${return_code}"
-
-    ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}<"
-    ZSH_THEME_GIT_PROMPT_SUFFIX="> %{$reset_color%}"
+if [ -z "${SSH_TTY}" ]; then
+    SSH_COL="blue"
 else
-    #
-    # Outside Emacs
-    #
-    PROMPT='%(?,%{$fg[green]%},%{$fg[red]%})%%%{$reset_color%} '
-    # RPS1='%{$fg[blue]%}%~%{$reset_color%} '
-    if [ -z "${SSH_TTY}" ]; then
-        SSH_COL="blue"
-    else
-        SSH_COL="red"
-    fi
-    RPS1='%{$fg[white]%}%2~$(git_prompt_info) %{$fg_bold[$SSH_COL]%}%m%{$reset_color%}'
+    SSH_COL="red"
+fi
 
-    ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[yellow]%}("
-    ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
-    ZSH_THEME_GIT_PROMPT_CLEAN=""
-    ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$fg[yellow]%}"
+# Set the theme
+fpath=( "$HOME/.zfunctions" $fpath )
+[ -d "$HOME/.zfunctions" ] || mkdir "$HOME/.zfunctions"
+[ -f "$HOME/.zfunctions/async" ] || curl -L https://raw.githubusercontent.com/sindresorhus/pure/master/async.zsh -o "$HOME/.zfunctions/async"
+[ -f "$HOME/.zfunctions/prompt_pure_setup" ] || curl -L https://raw.githubusercontent.com/sindresorhus/pure/master/pure.zsh -o "$HOME/.zfunctions/prompt_pure_setup"
+if [ -z "${INSIDE_EMACS}" ]; then
+    autoload -U promptinit; promptinit
+    prompt pure
 fi
